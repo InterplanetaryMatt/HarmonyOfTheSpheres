@@ -51,7 +51,7 @@ void OrbitDisplay::paint(juce::Graphics& g)
 }
 PlanetEditor::PlanetEditor(PlanetProcessor& p):AudioProcessorEditor(p),processor(p),orbits(p)
 {
- setOpaque(true); setSize(1160,820);
+ setOpaque(true); setSize(1160,875);
  podcastLogo = juce::ImageCache::getFromMemory(BinaryData::interplanetary_logo_jpg, BinaryData::interplanetary_logo_jpgSize);
  addAndMakeVisible(orbits);
  title.setText("HARMONY OF THE SPHERES",juce::dontSendNotification);title.setFont(juce::Font(23.f,juce::Font::bold));title.setColour(juce::Label::textColourId,juce::Colour(0xffe7f1ff));addAndMakeVisible(title);
@@ -63,9 +63,11 @@ PlanetEditor::PlanetEditor(PlanetProcessor& p):AudioProcessorEditor(p),processor
  addAndMakeVisible(spinNumber); choices.push_back(std::make_unique<ChoiceAttachment>(st,"spinccnum",spinNumber));
  auto makeSlider=[&](juce::Slider& s,const juce::String& id){s.setSliderStyle(juce::Slider::LinearHorizontal);s.setTextBoxStyle(juce::Slider::TextBoxRight,false,63,22);addAndMakeVisible(s);sliders.push_back(std::make_unique<SliderAttachment>(st,id,s));};
  makeSlider(earth,"earth");earth.setVisible(false);makeSlider(year,"year");makeSlider(depth,"depth");makeSlider(ellipse,"ellipse");makeSlider(gain,"gain");makeSlider(duty,"duty");
- for(auto* pair : {&audio,&midi,&bend,&gate,&spinCC}) {addAndMakeVisible(*pair);}
- audio.setButtonText("Internal audio");midi.setButtonText("MIDI output");bend.setButtonText("Pitch bend + orbit CC");gate.setButtonText("4 beats per orbit");spinCC.setButtonText("Planet rotation CC");
+ for(auto* pair : {&audio,&midi,&bend,&gate,&spinCC,&orbitCC11,&orbitCC10}) {addAndMakeVisible(*pair);}
+ audio.setButtonText("Internal audio");midi.setButtonText("MIDI output");bend.setButtonText("Microtonal pitch bend");gate.setButtonText("4 beats per orbit");spinCC.setButtonText("Rotation CC");orbitCC11.setButtonText("Orbital distance -> CC11");orbitCC10.setButtonText("Orbital position -> CC10");
  buttons.push_back(std::make_unique<ButtonAttachment>(st,"audio",audio));buttons.push_back(std::make_unique<ButtonAttachment>(st,"midi",midi));buttons.push_back(std::make_unique<ButtonAttachment>(st,"bend",bend));buttons.push_back(std::make_unique<ButtonAttachment>(st,"gate",gate));buttons.push_back(std::make_unique<ButtonAttachment>(st,"spincc",spinCC));
+ buttons.push_back(std::make_unique<ButtonAttachment>(st,"orbitcc11",orbitCC11));
+ buttons.push_back(std::make_unique<ButtonAttachment>(st,"orbitcc10",orbitCC10));
  const juce::StringArray labels{"Earth note (MIDI)","Earth year (seconds)","Orbit modulation","Ellipse exaggeration","Master volume"};
  for(int i=0;i<5;++i){controlLabels[i].setText(labels[i],juce::dontSendNotification); controlLabels[i].setColour(juce::Label::textColourId,juce::Colours::lightgrey);addAndMakeVisible(controlLabels[i]);}
  for(int i=0;i<8;++i){
@@ -96,6 +98,7 @@ void PlanetEditor::resized()
  orbits.setBounds(8,98,560,560);
  mode.setBounds(20,667,235,30);wave.setBounds(266,667,128,30);
  gate.setBounds(20,745,180,25);spinCC.setBounds(205,745,160,25);spinNumber.setBounds(370,742,190,30);duty.setBounds(20,778,335,28);
+ orbitCC11.setBounds(20,825,245,27);orbitCC10.setBounds(277,825,245,27);
  audio.setBounds(20,708,135,24);midi.setBounds(160,708,130,24);bend.setBounds(295,708,225,24);
  for(int i=0;i<8;++i){const int y=151+i*48;planetName[i].setBounds(584,y,110,30);enabled[i].setBounds(704,y,70,30);channel[i].setBounds(788,y,100,30);level[i].setBounds(900,y,132,30);}
  const std::array<juce::Slider*,5> ss{&earth,&year,&depth,&ellipse,&gain};

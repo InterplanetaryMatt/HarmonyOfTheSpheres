@@ -29,7 +29,7 @@ private:
  juce::Image podcastLogo;
  juce::ComboBox mode, wave, spinNumber;
  juce::Slider earth, year, depth, ellipse, gain, duty;
- juce::ToggleButton audio, midi, bend, gate, spinCC;
+ juce::ToggleButton audio, midi, bend, gate, spinCC, orbitCC11, orbitCC10;
  std::array<juce::ComboBox,8> channel;
  std::array<juce::ToggleButton,8> enabled;
  std::array<juce::Slider,8> level;

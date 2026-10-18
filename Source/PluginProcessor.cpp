@@ -34,7 +34,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlanetProcessor::makeParamet
  p.push_back(std::make_unique<F>(juce::ParameterID{"duty",1},"Pulse length (% of beat)",juce::NormalisableRange<float>(5.f,95.f,1.f),45.f));
  p.push_back(std::make_unique<B>(juce::ParameterID{"spincc",1},"Rotation MIDI CC",true));
  p.push_back(std::make_unique<C>(juce::ParameterID{"spinccnum",1},"Rotation CC number",juce::StringArray{"CC 1 Mod wheel","CC 11 Expression","CC 74 Brightness","CC 71 Resonance"},2));
- p.push_back(std::make_unique<B>(juce::ParameterID{"bend",1},"Independent MIDI channels + pitch bend",false));
+ p.push_back(std::make_unique<B>(juce::ParameterID{"bend",1},"Microtonal pitch bend",false));
+ p.push_back(std::make_unique<B>(juce::ParameterID{"orbitcc11",1},"Orbital distance to CC11",true));
+ p.push_back(std::make_unique<B>(juce::ParameterID{"orbitcc10",1},"Orbital position to CC10",true));
  for(int i=0;i<8;++i)
  {
   auto id=juce::String(i);
@@ -80,6 +82,8 @@ void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
  const int wave=(int)param(parameters,"wave");
  const bool audio=param(parameters,"audio")>0.5f, sendMidi=param(parameters,"midi")>0.5f;
  const bool bending=param(parameters,"bend")>0.5f;
+ const bool orbitCC11=param(parameters,"orbitcc11")>0.5f;
+ const bool orbitCC10=param(parameters,"orbitcc10")>0.5f;
  const bool rhythm=param(parameters,"gate")>0.5f;
  const double duty=param(parameters,"duty")/100.0;
  const bool spinCC=param(parameters,"spincc")>0.5f;
@@ -116,15 +120,29 @@ void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
   const bool wants=sendMidi && enabled && referenceNote>=0 && pulseOn;
   if(activeNote[i]>=0 && (!wants || activeNote[i]!=note || activeChannel[i]!=channel || wasSending!=sendMidi))
   { midi.addEvent(juce::MidiMessage::noteOff(activeChannel[i],activeNote[i]),0); activeNote[i]=-1; }
-  // MIDI expression reflects the orbital ellipse when using independent channels.
-  // In a shared channel this would make planets overwrite one another's CCs.
-  if(wants && bending && mode==3 && sendCCThisBlock)
+  // Independent orbital controllers are not tied to tuning mode, pitch bend,
+  // or the four-note rhythmic gate. Keep them flowing between note pulses.
+  // CC11: proximity to Sun (0 farthest, 127 nearest) with depth control.
+  // CC10: position around the orbit mapped to pan (left to right).
+  if(sendMidi && enabled && referenceNote>=0 && sendCCThisBlock)
   {
-   const int expression=juce::jlimit(0,127,(int)std::lround(127*mod));
-   const int midiPan=juce::jlimit(0,127,(int)std::lround(64+pan[i]*63));
-   if(expression!=lastExpression[i]) {midi.addEvent(juce::MidiMessage::controllerEvent(channel,11,expression),0);lastExpression[i]=expression;}
-   if(midiPan!=lastPan[i]) {midi.addEvent(juce::MidiMessage::controllerEvent(channel,10,midiPan),0);lastPan[i]=midiPan;}
+   if(orbitCC11)
+   {
+    const double expressionLevel=1.0-depth*0.65+depth*0.65*closeness;
+    const int expression=juce::jlimit(0,127,(int)std::lround(127*expressionLevel));
+    if(expression!=lastExpression[i])
+    {midi.addEvent(juce::MidiMessage::controllerEvent(channel,11,expression),0);lastExpression[i]=expression;}
+   }
+   else lastExpression[i]=-1;
+   if(orbitCC10)
+   {
+    const int midiPan=juce::jlimit(0,127,(int)std::lround(64+depth*0.8*std::sin(a)*63));
+    if(midiPan!=lastPan[i])
+    {midi.addEvent(juce::MidiMessage::controllerEvent(channel,10,midiPan),0);lastPan[i]=midiPan;}
+   }
+   else lastPan[i]=-1;
   }
+  else {lastExpression[i]=-1;lastPan[i]=-1;}
   // Sidereal spin mapped to a sine-wave CC. CC is channel-wide in MIDI 1.0.
   // 200 Hz update attempts; fast rotation can still be aliased when the simulated year is very short.
   if(sendMidi && enabled && referenceNote>=0 && spinCC && sendCCThisBlock)
@@ -142,7 +160,6 @@ void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
     midi.addEvent(juce::MidiMessage::pitchWheel(channel,pb),0);
    }
    midi.addEvent(juce::MidiMessage::noteOn(channel,note,(juce::uint8)96),0);
-   lastExpression[i]=-1;lastPan[i]=-1;
    activeNote[i]=note; activeChannel[i]=channel;
   }
  }
