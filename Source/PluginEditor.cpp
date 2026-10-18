@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include <BinaryData.h>
 #include <cmath>
 
 namespace {
@@ -41,19 +42,20 @@ void OrbitDisplay::paint(juce::Graphics& g)
  }
  const int played=processor.getReferenceMidiNote();
  g.setColour(juce::Colour(0xffa9d8ff));g.setFont(15.f);
- const juce::String noteMessage=played < 0 ? "READY — PLAY A MIDI NOTE" :
+ const juce::String noteMessage=played < 0 ? "READY - PLAY A MIDI NOTE" :
    "EARTH: " + juce::MidiMessage::getMidiNoteName(played,true,true,3) +
    "  /  " + juce::String(juce::MidiMessage::getMidiNoteInHertz(played),1) + " Hz";
  g.drawFittedText(noteMessage,bounds.toNearestInt().removeFromTop(31),juce::Justification::centred,1);
  g.setColour(juce::Colours::white.withAlpha(.65f));g.setFont(13.f);
- g.drawFittedText("Four note pulses per orbit • Sidereal rotation to MIDI CC • Orbits not to scale",bounds.toNearestInt().removeFromBottom(24),juce::Justification::centred,1);
+ g.drawFittedText("4 beats per orbit  |  Planet rotation to MIDI CC  |  Orbits not to scale",bounds.toNearestInt().removeFromBottom(24),juce::Justification::centred,1);
 }
 PlanetEditor::PlanetEditor(PlanetProcessor& p):AudioProcessorEditor(p),processor(p),orbits(p)
 {
  setOpaque(true); setSize(1160,820);
+ podcastLogo = juce::ImageCache::getFromMemory(BinaryData::interplanetary_logo_jpg, BinaryData::interplanetary_logo_jpgSize);
  addAndMakeVisible(orbits);
  title.setText("HARMONY OF THE SPHERES",juce::dontSendNotification);title.setFont(juce::Font(23.f,juce::Font::bold));title.setColour(juce::Label::textColourId,juce::Colour(0xffe7f1ff));addAndMakeVisible(title);
- subtitle.setText("PLAY A MIDI KEY TO START • THE NOTE SETS EARTH’S PITCH • RELEASE TO STOP",juce::dontSendNotification);subtitle.setColour(juce::Label::textColourId,juce::Colour(0xff90a8c4));addAndMakeVisible(subtitle);
+ subtitle.setText("PLAY A MIDI NOTE - SET EARTH PITCH - RELEASE TO STOP",juce::dontSendNotification);subtitle.setColour(juce::Label::textColourId,juce::Colour(0xff90a8c4));addAndMakeVisible(subtitle);
  auto& st=p.parameters;
  auto makeChoice=[&](juce::ComboBox& box,const juce::String& id,int count) { for(int i=0;i<count;++i) box.addItem(id.startsWith("ch")?juce::String(i+1):id=="mode"?(juce::StringArray{"True ratios","Octave folded","Compressed","Orbital modulation"})[i]:(juce::StringArray{"Sine","Triangle","Soft saw"})[i],i+1);addAndMakeVisible(box);choices.push_back(std::make_unique<ChoiceAttachment>(st,id,box));};
  makeChoice(mode,"mode",4); makeChoice(wave,"wave",3);
@@ -62,9 +64,9 @@ PlanetEditor::PlanetEditor(PlanetProcessor& p):AudioProcessorEditor(p),processor
  auto makeSlider=[&](juce::Slider& s,const juce::String& id){s.setSliderStyle(juce::Slider::LinearHorizontal);s.setTextBoxStyle(juce::Slider::TextBoxRight,false,63,22);addAndMakeVisible(s);sliders.push_back(std::make_unique<SliderAttachment>(st,id,s));};
  makeSlider(earth,"earth");earth.setVisible(false);makeSlider(year,"year");makeSlider(depth,"depth");makeSlider(ellipse,"ellipse");makeSlider(gain,"gain");makeSlider(duty,"duty");
  for(auto* pair : {&audio,&midi,&bend,&gate,&spinCC}) {addAndMakeVisible(*pair);}
- audio.setButtonText("Internal audio");midi.setButtonText("MIDI output");bend.setButtonText("Microtuning / ellipse CC");gate.setButtonText("4 beats per orbit");spinCC.setButtonText("Rotation CC out");
+ audio.setButtonText("Internal audio");midi.setButtonText("MIDI output");bend.setButtonText("Pitch bend + orbit CC");gate.setButtonText("4 beats per orbit");spinCC.setButtonText("Planet rotation CC");
  buttons.push_back(std::make_unique<ButtonAttachment>(st,"audio",audio));buttons.push_back(std::make_unique<ButtonAttachment>(st,"midi",midi));buttons.push_back(std::make_unique<ButtonAttachment>(st,"bend",bend));buttons.push_back(std::make_unique<ButtonAttachment>(st,"gate",gate));buttons.push_back(std::make_unique<ButtonAttachment>(st,"spincc",spinCC));
- const juce::StringArray labels{"Earth: incoming MIDI","Year length (s)","Orbit depth","Ellipse exaggeration","Master level"};
+ const juce::StringArray labels{"Earth note (MIDI)","Earth year (seconds)","Orbit modulation","Ellipse exaggeration","Master volume"};
  for(int i=0;i<5;++i){controlLabels[i].setText(labels[i],juce::dontSendNotification); controlLabels[i].setColour(juce::Label::textColourId,juce::Colours::lightgrey);addAndMakeVisible(controlLabels[i]);}
  for(int i=0;i<8;++i){
   auto id=juce::String(i);planetName[i].setText(names[i],juce::dontSendNotification);planetName[i].setColour(juce::Label::textColourId,palette[i]);addAndMakeVisible(planetName[i]);
@@ -75,6 +77,12 @@ PlanetEditor::PlanetEditor(PlanetProcessor& p):AudioProcessorEditor(p),processor
 void PlanetEditor::paint(juce::Graphics& g)
 {
  g.fillAll(juce::Colour(0xff070e19));
+ if (podcastLogo.isValid()) {
+  const auto badge = juce::Rectangle<float>(1037.0f, 8.0f, 106.0f, 106.0f);
+  g.setColour(juce::Colour(0xff152743));
+  g.fillRoundedRectangle(badge.expanded(3.0f), 9.0f);
+  g.drawImageWithin(podcastLogo, (int)badge.getX(), (int)badge.getY(), (int)badge.getWidth(), (int)badge.getHeight(), juce::RectanglePlacement::centred);
+ }
  g.setColour(juce::Colour(0xffa8c1df));g.setFont(14.f);
  g.drawText("PLANET",580,118,115,22,juce::Justification::centredLeft);
  g.drawText("ENABLE",701,118,75,22,juce::Justification::centredLeft);

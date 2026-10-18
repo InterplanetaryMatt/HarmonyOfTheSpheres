@@ -26,6 +26,7 @@ private:
  PlanetProcessor& processor;
  OrbitDisplay orbits;
  juce::Label title, subtitle;
+ juce::Image podcastLogo;
  juce::ComboBox mode, wave, spinNumber;
  juce::Slider earth, year, depth, ellipse, gain, duty;
  juce::ToggleButton audio, midi, bend, gate, spinCC;
