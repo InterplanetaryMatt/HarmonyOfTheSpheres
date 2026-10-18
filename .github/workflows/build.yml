@@ -1,0 +1,29 @@
+name: Build Windows and macOS plug-ins
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-2022
+            name: windows
+          - os: macos-14
+            name: macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: harmony-of-the-spheres-${{ matrix.name }}
+          path: |
+            build/HarmonyOfTheSpheres_artefacts/Release/VST3/**
+            build/HarmonyOfTheSpheres_artefacts/VST3/**
+            build/HarmonyOfTheSpheres_artefacts/Release/Standalone/**
+            build/HarmonyOfTheSpheres_artefacts/Standalone/**
