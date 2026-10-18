@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(HarmonyOfTheSpheres VERSION 0.1.0 LANGUAGES CXX)
+project(HarmonyOfTheSpheres VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 include(FetchContent)
 FetchContent_Declare(JUCE GIT_REPOSITORY https://github.com/juce-framework/JUCE.git GIT_TAG 8.0.10 GIT_SHALLOW TRUE)
