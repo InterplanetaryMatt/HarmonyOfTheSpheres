@@ -1,3 +1,15 @@
+## v0.3 — MIDI-keyed Solar System
+
+Play a note into the plug-in to start the eight planets. Incoming MIDI note 69 (A4) makes Earth 440 Hz; C4 makes Earth 261.626 Hz, etc. Releasing the final held MIDI key stops all planet MIDI notes and smoothly silences the internal audio. With overlapping keys, the most recently pressed held note sets Earth's pitch, reverting to a prior held note on release. Incoming note MIDI is consumed, not forwarded to the downstream Roland instrument; the planetary notes are emitted instead.
+
+The Earth frequency knob is disabled in this MIDI-keyed version. MIDI input must be enabled in the JUCE VST3 definition; v0.3 includes that change.
+
+**Output modulation (only if both Pitch bend + orbit CC and Orbital modulation are selected):** CC11 = orbital expression/relative level, CC10 = stereo pan. Sent per active planet on its assigned channel, at most ~25 times per second and only if values change. MIDI pitch bend is sent when notes start if Pitch bend + orbit CC is on; it assumes a +/-2 semitone range on your Roland instrument. Turn off this option if the receiving patch ignores CCs or does not use the same pitch-bend range.
+
+**Important:** assign every planet to a different MIDI channel when using pitch bend or CCs; these are channel-wide MIDI messages. The channel-specific CC11 and CC10 are creative orbital mappings, not physical acoustic properties of the planets.
+
+**Known limitation:** note-on/off are currently block-boundary events rather than sample-accurate, and the plugin does not capture sustain-pedal behaviour. The release gate responds to received note-offs; some controllers/hosts may keep notes active until sustain pedal is lifted.
+
 # Harmony of the Spheres — JUCE VST3 (source prototype)
 
 A Windows/macOS planetary sonification synth designed for REAPER, based on the eight planetary *sidereal* orbital periods. This package contains **source code, not precompiled binaries**. It has not yet been compiled or host-tested. Built using JUCE 8 (fetched automatically by CMake). A generic JUCE editor exposes the parameters; the animated orbital display from the browser edition has **not** yet been ported.
@@ -64,3 +76,13 @@ Place Harmony of the Spheres before a multitimbral instrument and configure inst
 ### Build check
 
 Push this folder's **contents** to the root of your existing GitHub repository, including `.github/workflows/build.yml`. The workflow attempts Windows and macOS builds independently. **This release is source only and has not been compiled or host-tested here**; use GitHub Actions to verify its build and inspect any compiler errors.
+
+
+## v0.4: orbit rhythm and planetary rotation CC
+
+* **4 beats per orbit:** when enabled, each planet gates its note on four times per sidereal orbital revolution, at equal intervals in **time (mean anomaly)**. Pulse length determines each beat's duty cycle. A note is only generated while an incoming keyboard note is held. This is **not** a shared 4/4 tempo: every planet has its own orbital bar duration. Note events are currently resolved to the audio-buffer boundary.
+* **Rotation CC:** outputs a continuous controller oscillating once per planet's **sidereal rotation**. Negative rotation periods preserve Venus and Uranus's retrograde direction. Choices: CC1, CC11, CC74 or CC71. The modulation is an artistic mapping, not an acoustic property of the planet. 200-Hz target update rate is evaluated once per audio block; rapid rotations at extremely short simulated years can alias.
+* **Critical:** use a unique MIDI channel per planet, particularly when spin CC, pitch bend or ellipse CC are active: MIDI 1.0 CCs affect an entire channel. When both ellipse expression and spin CC11 are enabled on the same channel, they will compete; choose CC74 or CC1 instead.
+* **Timing:** year length is simulated seconds per Earth year. Four Earth note pulses per simulated Earth year; Earth's rotation makes ~366.26 **sidereal** cycles per Earth orbit (not 365), due to the distinction between sidereal and solar days.
+* **Incoming MIDI:** a held key triggers the system and sets Earth's pitch; releasing all keys stops output notes.
+* **Status:** source-level prototype, builds and actual MIDI behavior have not been verified in REAPER or Roland VSTs.

@@ -26,9 +26,9 @@ private:
  PlanetProcessor& processor;
  OrbitDisplay orbits;
  juce::Label title, subtitle;
- juce::ComboBox mode, wave;
- juce::Slider earth, year, depth, ellipse, gain;
- juce::ToggleButton audio, midi, bend;
+ juce::ComboBox mode, wave, spinNumber;
+ juce::Slider earth, year, depth, ellipse, gain, duty;
+ juce::ToggleButton audio, midi, bend, gate, spinCC;
  std::array<juce::ComboBox,8> channel;
  std::array<juce::ToggleButton,8> enabled;
  std::array<juce::Slider,8> level;

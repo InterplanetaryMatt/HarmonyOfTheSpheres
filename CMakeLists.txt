@@ -12,7 +12,7 @@ juce_add_plugin(HarmonyOfTheSpheres
     FORMATS VST3 Standalone
     PRODUCT_NAME "Harmony of the Spheres"
     IS_SYNTH TRUE
-    NEEDS_MIDI_INPUT FALSE
+    NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT TRUE
     IS_MIDI_EFFECT FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE)
