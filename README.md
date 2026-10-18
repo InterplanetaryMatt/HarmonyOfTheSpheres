@@ -46,3 +46,21 @@ Create an empty repository, upload this folder (including `.github/workflows/bui
 The animated orbit display is not included in this first JUCE prototype. Planetary frequencies are *mapped from revolutions per year*, not real audible sounds emitted by planets. The real orbital motion is governed by Kepler's equation; stereo location, level and timbre are musical interpretations. The per-block orbital updates are not sample-accurate and long-period planets move slowly unless simulation time is accelerated substantially. The generic parameter interface is deliberately utilitarian, pending a bespoke orbit visualization and performance UI.
 
 Next priority: build/test with REAPER + Roland plugin, then add custom planetary orbital editor, independent MIDI CC mapping UI, note quantization choice and a panic/reset control.
+
+## Version 0.2 — orbital graphic and per-planet MIDI channels
+
+* The custom JUCE interface draws eight Keplerian ellipses with the Sun at a focus, and animates each planet according to its period and eccentricity. Planet and orbit sizes are illustrative, not a scale model.
+* Each planet has an `MIDI channel` selector (1–16), `On` toggle and level control. All parameters are saved in REAPER project state.
+* Changing a planet's channel sends its note-off on the **previous** channel before the replacement note-on on the **new** channel.
+* For independent microtonal pitch bend and CC10/CC11 orbital modulation, give each planet a **unique MIDI channel** and enable `Pitch bend + orbit CC`. MIDI pitch bend assumes the receiving instrument has a ±2-semitone pitch-bend range.
+* Shared channels work for ordinary equal-tempered note playback, but pitch bend and MIDI CC are per-channel and can interfere when two planets use the same channel. The instrument doesn't prevent duplicates.
+* Orbital visuals animate while REAPER is processing audio, not as a standalone astronomical clock. Audio oscillator pitches remain exact within their tuning mode, while outgoing standard MIDI notes are rounded to semitones (with optional pitch bend).
+* The panel's orbit animation compresses time and intentionally exaggerates eccentricity if the user sets `Ellipse exaggeration` above 1.
+
+### REAPER routing
+
+Place Harmony of the Spheres before a multitimbral instrument and configure instrument parts to receive the planets' selected channels, or send the track's MIDI to separate Roland instrument tracks (disable master/parent audio send on the generator track if necessary). For each receiving Roland instrument, choose the appropriate MIDI source channel in REAPER's track send configuration. Turn off `Internal audio` in Harmony to hear only the Roland instruments.
+
+### Build check
+
+Push this folder's **contents** to the root of your existing GitHub repository, including `.github/workflows/build.yml`. The workflow attempts Windows and macOS builds independently. **This release is source only and has not been compiled or host-tested here**; use GitHub Actions to verify its build and inspect any compiler errors.

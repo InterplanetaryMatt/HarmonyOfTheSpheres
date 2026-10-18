@@ -24,10 +24,13 @@ public:
  void setStateInformation(const void*, int) override;
  bool isBusesLayoutSupported(const BusesLayout& l) const override { return l.getMainOutputChannelSet() == juce::AudioChannelSet::stereo(); }
  juce::AudioProcessorValueTreeState parameters;
+ double getOrbitTime() const noexcept { return orbitTime.load(std::memory_order_relaxed); }
 private:
  static juce::AudioProcessorValueTreeState::ParameterLayout makeParameters();
  std::array<double,8> phase{};
  std::array<int,8> activeNote{};
+ std::array<int,8> activeChannel{};
+ std::atomic<double> orbitTime{0.0};
  std::array<double,8> smoothLevel{};
  double elapsedSeconds=0, sampleRateHz=44100;
  bool wasSending=false;

@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 #include <cmath>
 namespace {
 constexpr double pi=3.14159265358979323846;
@@ -34,11 +35,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout PlanetProcessor::makeParamet
   auto id=juce::String(i);
   p.push_back(std::make_unique<B>(juce::ParameterID{"on"+id,1},juce::String(names[i])+" on",true));
   p.push_back(std::make_unique<F>(juce::ParameterID{"vol"+id,1},juce::String(names[i])+" level",0.f,1.f,0.65f));
+  p.push_back(std::make_unique<C>(juce::ParameterID{"ch"+id,1},juce::String(names[i])+" MIDI channel",juce::StringArray{"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16"},i));
  }
  return {p.begin(),p.end()};
 }
-PlanetProcessor::PlanetProcessor(): AudioProcessor(BusesProperties().withOutput("Output",juce::AudioChannelSet::stereo(),true)),parameters(*this,nullptr,"PARAMETERS",makeParameters()) {activeNote.fill(-1);}
-void PlanetProcessor::prepareToPlay(double sr,int) {sampleRateHz=sr;phase.fill(0);smoothLevel.fill(0); activeNote.fill(-1);wasSending=false;}
+PlanetProcessor::PlanetProcessor(): AudioProcessor(BusesProperties().withOutput("Output",juce::AudioChannelSet::stereo(),true)),parameters(*this,nullptr,"PARAMETERS",makeParameters()) {activeNote.fill(-1); activeChannel.fill(1);}
+void PlanetProcessor::prepareToPlay(double sr,int) {sampleRateHz=sr;phase.fill(0);smoothLevel.fill(0); activeNote.fill(-1);activeChannel.fill(1);elapsedSeconds=0;orbitTime.store(0);wasSending=false;}
 void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi)
 {
  juce::ScopedNoDenormals noDenormals;
@@ -72,11 +74,11 @@ void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
   amplitude[i]=(enabled?level:0)*mod;
   pan[i]=(mode==3)?depth*0.8*std::sin(a):0;
   // Independent channel mode sends each planet on channels 1-8, with +/-2 semitone pitch bend.
-  const int channel=bending?i+1:1;
+  const int channel=1+(int)parameters.getRawParameterValue("ch"+id)->load();
   const int note=juce::jlimit(0,127,(int)std::lround(69+12*std::log2(f/440.0)));
   const bool wants=sendMidi && enabled;
-  if(activeNote[i]>=0 && (!wants || activeNote[i]!=note || wasSending!=sendMidi))
-  { midi.addEvent(juce::MidiMessage::noteOff(channel,activeNote[i]),0); activeNote[i]=-1; }
+  if(activeNote[i]>=0 && (!wants || activeNote[i]!=note || activeChannel[i]!=channel || wasSending!=sendMidi))
+  { midi.addEvent(juce::MidiMessage::noteOff(activeChannel[i],activeNote[i]),0); activeNote[i]=-1; }
   // MIDI expression reflects the orbital ellipse when using independent channels.
   // In a shared channel this would make planets overwrite one another's CCs.
   if(wants && bending && mode==3)
@@ -94,7 +96,7 @@ void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
     midi.addEvent(juce::MidiMessage::pitchWheel(channel,pb),0);
    }
    midi.addEvent(juce::MidiMessage::noteOn(channel,note,(juce::uint8)96),0);
-   activeNote[i]=note;
+   activeNote[i]=note; activeChannel[i]=channel;
   }
  }
  wasSending=sendMidi;
@@ -116,9 +118,9 @@ void PlanetProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
   if(buffer.getNumChannels()>0) buffer.setSample(0,s,juce::jlimit(-1.f,1.f,left));
   if(buffer.getNumChannels()>1) buffer.setSample(1,s,juce::jlimit(-1.f,1.f,right));
  }
- elapsedSeconds+=(double)n/sampleRateHz;
+ elapsedSeconds+=(double)n/sampleRateHz; orbitTime.store(elapsedSeconds,std::memory_order_relaxed);
 }
-juce::AudioProcessorEditor* PlanetProcessor::createEditor(){return new juce::GenericAudioProcessorEditor(*this);}
+juce::AudioProcessorEditor* PlanetProcessor::createEditor(){return new PlanetEditor(*this);}
 void PlanetProcessor::getStateInformation(juce::MemoryBlock& b)
 {
  if(auto xml=parameters.copyState().createXml()) copyXmlToBinary(*xml,b);
