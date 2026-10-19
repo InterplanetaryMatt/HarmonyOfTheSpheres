@@ -2,6 +2,10 @@
 
 JUCE VST3 instrument and MIDI generator for REAPER, Windows and macOS.
 
+## Watch the Harmony Of The Spheres Demo
+
+[![Watch Jovian Harmony in Action](Assets/harmonyofthespheres.png)](https://www.youtube.com/watch?v=XcUy4dgENYQ?si=JgC_ABg4YQ_dXSGS)
+
 ## Version 0.5 changes
 - Adds the supplied Interplanetary Podcast artwork at the top-right of the plug-in editor.
 - Embeds the artwork in the compiled plug-in using JUCE BinaryData. No external image file is needed at runtime.
